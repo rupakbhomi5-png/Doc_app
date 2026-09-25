@@ -71,58 +71,7 @@ def require_api_key(f):
     
 @app.route('/')
 def index():
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Invoice Extractor</title>
-        <style>
-            body { font-family: Arial; max-width: 600px; margin: 50px auto; }
-            .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
-            input, button { padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box; }
-            button { background: #007bff; color: white; cursor: pointer; border: none; border-radius: 4px; }
-            button:hover { background: #0056b3; }
-            #result { margin-top: 20px; white-space: pre-wrap; background: #f5f5f5; padding: 10px; border-radius: 4px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Invoice Extractor</h1>
-            <p>Upload a PDF invoice or receipt to extract structured data.</p>
-            <input type="file" id="pdfFile" accept=".pdf" />
-            <button onclick="uploadFile()">Extract Data</button>
-            <div id="result"></div>
-        </div>
-        <script>
-            function uploadFile() {
-                const file = document.getElementById('pdfFile').files[0];
-                if (!file) {
-                    alert('Please select a PDF file');
-                    return;
-                }
-                
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                document.getElementById('result').textContent = 'Processing...';
-                
-                fetch('/extract', {
-                    method: 'POST',
-                    headers: { 'X-API-Key': 'demo-key-123' },
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-                })
-                .catch(err => {
-                    document.getElementById('result').textContent = 'Error: ' + err;
-                });
-            }
-        </script>
-    </body>
-    </html>
-    '''
+    return render_template('index.html')
 
 @app.route('/extract', methods=['POST'])
 @rate_limit(max_requests=10, window=3600)

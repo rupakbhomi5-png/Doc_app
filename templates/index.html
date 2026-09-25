@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice Extractor</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.95;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        .file-input-wrapper {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+        .file-input-wrapper:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+        .file-input-wrapper.drag-over {
+            background: #e8ebff;
+            border-color: #764ba2;
+        }
+        #pdfFile {
+            display: none;
+        }
+        .file-input-text {
+            font-size: 14px;
+            color: #666;
+        }
+        .file-input-text strong {
+            color: #667eea;
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .file-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+        .selected-file {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            color: #2e7d32;
+            font-size: 13px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result-container {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-container.show {
+            display: block;
+        }
+        .error-box {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            border-radius: 8px;
+            padding: 16px;
+            color: #c62828;
+            font-size: 14px;
+            display: none;
+        }
+        .error-box.show {
+            display: block;
+        }
+        .error-box strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .success-box {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            color: #2e7d32;
+            font-size: 14px;
+            display: none;
+        }
+        .success-box.show {
+            display: block;
+        }
+        .success-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .data-section {
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #667eea;
+        }
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .field {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        .field-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .field-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+        }
+        .amount {
+            color: #2e7d32;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: white;
+        }
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+        th {
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+        tr:hover {
+            background: #fafafa;
+        }
+        .copy-btn {
+            width: auto;
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        .copy-btn:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Invoice Extractor</h1>
+            <p>Upload PDF invoices and receipts to extract structured data instantly</p>
+        </div>
+        <div class="content">
+            <div class="form-group">
+                <label class="form-label">Select PDF File</label>
+                <div class="file-input-wrapper" id="fileDropZone">
+                    <input type="file" id="pdfFile" accept=".pdf" />
+                    <div class="file-input-text">
+                        <strong>Click to upload or drag and drop</strong>
+                        <div class="file-info">PDF only, max 5MB</div>
+                    </div>
+                    <div class="selected-file" id="selectedFile" style="display: none;"></div>
+                </div>
+            </div>
+            <button id="extractBtn" onclick="uploadFile()">Extract Data</button>
+            
+            <div class="result-container" id="resultContainer">
+                <div class="error-box" id="errorBox"></div>
+                <div class="loading" id="loading">
+                    <span class="spinner"></span>Processing invoice...
+                </div>
+                <div class="success-box" id="successBox"></div>
+                <div id="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('pdfFile');
+        const dropZone = document.getElementById('fileDropZone');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const resultContainer = document.getElementById('resultContainer');
+        const errorBox = document.getElementById('errorBox');
+        const successBox = document.getElementById('successBox');
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const extractBtn = document.getElementById('extractBtn');
+
+        // File input click
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateSelectedFile();
+            }
+        });
+
+        // File selection
+        fileInput.addEventListener('change', updateSelectedFile);
+
+        function updateSelectedFile() {
+            const file = fileInput.files[0];
+            if (file) {
+                const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                selectedFileDiv.textContent = `✓ ${file.name} (${sizeMB} MB)`;
+                selectedFileDiv.style.display = 'block';
+            } else {
+                selectedFileDiv.style.display = 'none';
+            }
+        }
+
+        function formatFieldName(name) {
+            return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatData(data) {
+            let html = '';
+            
+            if (data.error) {
+                return `<strong>${data.error}</strong>`;
+            }
+
+            if (data.vendor) {
+                html += `
+                <div class="data-section">
+                    <div class="section-title">Invoice Details</div>
+                    <div class="field-grid">
+                        <div class="field">
+                            <div class="field-label">Vendor</div>
+                            <div class="field-value">${data.vendor || 'N/A'}</div>
+                        </div>
+                        <div class="field">
+                            <div class="field-label">Invoice Number</div>
+                            <div class="field-value">${data.invoice_number || 'N/A'}</div>
+                        </div>
+                        <div class="field">
+                            <div class="field-label">Date</div>
+                            <div class="field-value">${data.date || 'N/A'}</div>
+                        </div>
+                        <div class="field">
+                            <div class="field-label">Total Amount</div>
+                            <div class="field-value amount">$${data.amount || '0.00'}</div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            if (data.line_items && data.line_items.length > 0) {
+                html += `
+                <div class="data-section">
+                    <div class="section-title">Line Items</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Qty</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                data.line_items.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${item.description || '-'}</td>
+                            <td>${item.quantity || '-'}</td>
+                            <td class="amount">$${item.amount || '0.00'}</td>
+                        </tr>
+                    `;
+                });
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function uploadFile() {
+            const file = fileInput.files[0];
+            
+            // Clear previous results
+            errorBox.classList.remove('show');
+            successBox.classList.remove('show');
+            resultDiv.innerHTML = '';
+
+            if (!file) {
+                showError('Please select a PDF file');
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showError('Only PDF files are allowed');
+                return;
+            }
+
+            const sizeMB = file.size / 1024 / 1024;
+            if (sizeMB > 5) {
+                showError(`File too large (${sizeMB.toFixed(2)} MB). Maximum is 5 MB.`);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            resultContainer.classList.add('show');
+            loading.classList.add('show');
+            extractBtn.disabled = true;
+
+            fetch('/extract', {
+                method: 'POST',
+                headers: { 'X-API-Key': 'demo-key-123' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.remove('show');
+                extractBtn.disabled = false;
+
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    showSuccess(`Successfully extracted from ${file.name}`);
+                    resultDiv.innerHTML = formatData(data);
+                }
+            })
+            .catch(err => {
+                loading.classList.remove('show');
+                extractBtn.disabled = false;
+                showError('Network error: ' + err.message);
+            });
+        }
+
+        function showError(message) {
+            errorBox.innerHTML = `<strong>Error</strong> ${message}`;
+            errorBox.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            successBox.innerHTML = `<span class="success-icon">✓</span>${message}`;
+            successBox.classList.add('show');
+        }
+    </script>
+</body>
+</html>
